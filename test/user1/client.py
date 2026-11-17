@@ -403,10 +403,12 @@ def receiver(RSApublic_key, RSAprivate_key):
 
         choice = signature_choice()
 
-        data1 = receiver_socket.recv(597).decode()
-        data2 = receiver_socket.recv(597).decode()
-
-        senders_public_key_dsa = data1 + data2 
+        senders_public_key_dsa = ""
+        while "-----END PUBLIC KEY-----" not in senders_public_key_dsa:
+            chunk = receiver_socket.recv(1024).decode()
+            if not chunk:
+                break
+            senders_public_key_dsa += chunk 
 
         # Send RSA Public key
         receiver_socket.send(RSApublic_key.encode())
@@ -503,20 +505,23 @@ def receiver(RSApublic_key, RSAprivate_key):
         else:
 
             print("Verifying RSA and DSA Signatures...")
-            if verify_signature_rsa(serialization.load_pem_public_key(senders_public_key_rsa), signature_rsa, decrypt):
+            rsa_valid = verify_signature_rsa(serialization.load_pem_public_key(senders_public_key_rsa), signature_rsa, decrypt)
+            if rsa_valid:
                 print("RSA Signature verified successfully")
-                file.write(decrypt)
             else:
                 print("Signature verification failed")
-                print("Fatal error, canceling file transfer") 
 
-            if verify_signature_dsa(serialization.load_pem_public_key(senders_public_key_dsa.encode()), signature_dsa, decrypt):
+            dsa_valid = verify_signature_dsa(serialization.load_pem_public_key(senders_public_key_dsa.encode()), signature_dsa, decrypt)
+            if dsa_valid:
                 print("DSA Signature verified successfully")
-                print("GREAT NEWS!\nBoth RSA and DSA signatures verified")
-                print("Success, File Transfer Complete")
-                file.write(decrypt)
             else:
                 print("DSA Signature verification failed")
+
+            if rsa_valid and dsa_valid:
+                print("GREAT NEWS!\nBoth RSA and DSA signatures verified")
+                file.write(decrypt)
+                print("Success, File Transfer Complete")
+            else:
                 print("Fatal error, canceling file transfer") 
 
         file.close()

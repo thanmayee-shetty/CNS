@@ -14,4 +14,9 @@ test/user2/rsa_private.pem
 test/user2/dsa_public.pem
 test/user2/dsa_private.pem
 
+.venv/
+test/user2/Transferred*
+*.pyc
+__pycache__/
+
 src/TestEnvironmentP2P/
